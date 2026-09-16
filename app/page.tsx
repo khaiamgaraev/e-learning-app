@@ -122,12 +122,10 @@ export default function Home() {
   }
 
   async function handleDeleteSession(sessionId: string, e: React.MouseEvent) {
-    e.stopPropagation(); // Kartın digər klik hadisələrinin işə düşməsinin qarşısını alırıq
+    e.stopPropagation();
     if (!confirm("Bu cədvəli silmək istədiyinizə əminsiniz?")) return;
 
-    // Əvvəlcə əlaqəli dərsləri silirik
     await supabase.from("student_schedules").delete().eq("session_id", sessionId);
-    // Sonra sessiyanın özünü silirik
     const { error } = await supabase.from("student_sessions").delete().eq("id", sessionId);
 
     if (!error) {
@@ -332,157 +330,135 @@ export default function Home() {
   }
 
   return (
-      <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased">
+      <div className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800">
 
-        <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md">
-          <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900">
-                <LayoutDashboard className="w-5 h-5" />
-              </div>
-              <h1 className="text-sm font-semibold tracking-tight">Akademik Cədvəl</h1>
-            </div>
+        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black">
+          <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+            <span className="text-sm font-medium tracking-tight">Akademik Cədvəl</span>
           </div>
         </header>
 
-        <main className="max-w-5xl mx-auto px-6 py-10">
+        <main className="max-w-4xl mx-auto px-6 py-10">
 
           {step === "cards" && (
               <div className="space-y-8">
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                      İxtisas Seçimi
-                    </label>
-                    <select
-                        value={selectedMajorId || ""}
-                        onChange={(e) => {
-                          setSelectedMajorId(Number(e.target.value));
-                          setShowRecommendations(false);
-                        }}
-                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-sm focus:outline-none"
-                    >
-                      <option value="">— İxtisas seçin —</option>
-                      {majorOptions.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="space-y-4">
+                  <label className="block text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                    İxtisas Seçimi
+                  </label>
+                  <select
+                      value={selectedMajorId || ""}
+                      onChange={(e) => {
+                        setSelectedMajorId(Number(e.target.value));
+                        setShowRecommendations(false);
+                      }}
+                      className="w-full h-10 px-3 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent text-sm focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100"
+                  >
+                    <option value="">— İxtisas seçin —</option>
+                    {majorOptions.map((m) => (
+                        <option key={m.id} value={m.id} className="bg-white dark:bg-zinc-900">{m.name}</option>
+                    ))}
+                  </select>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                  <div className="flex items-center gap-3 pt-1">
                     <button
                         type="button"
                         onClick={handleStartNewSchedule}
                         disabled={loading}
-                        className="w-full sm:flex-1 h-10 px-5 rounded-md bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                        className="h-9 px-4 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium hover:opacity-90 transition-opacity"
                     >
-                      <Plus className="w-4 h-4" /> Cədvəl Qur
+                      Cədvəl Qur
                     </button>
 
                     <button
                         type="button"
                         onClick={handleFetchRecommendations}
                         disabled={loading}
-                        className="w-full sm:flex-1 h-10 px-5 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm font-medium transition-all flex items-center justify-center gap-2"
+                        className="h-9 px-4 rounded border border-zinc-300 dark:border-zinc-700 text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
                     >
-                      <Sparkles className="w-4 h-4 text-amber-500" /> Lektor tövsiyəsi alın
+                      Lektor tövsiyəsi alın
                     </button>
                   </div>
                 </div>
 
                 {showRecommendations && (
-                    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm animate-in fade-in duration-200">
-                      <div className="bg-zinc-100 dark:bg-zinc-800/60 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                          Seçilmiş İxtisasın Fənləri və Tövsiyə Edilən Lektorlar
-                        </h3>
-                        <button
-                            onClick={() => setShowRecommendations(false)}
-                            className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                        >
-                          Bağla
-                        </button>
+                    <div className="border border-zinc-200 dark:border-zinc-800 rounded divide-y divide-zinc-200 dark:divide-zinc-800">
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">Tövsiyə Olunan Lektorlar</span>
+                        <button onClick={() => setShowRecommendations(false)} className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">Bağla</button>
                       </div>
-
-                      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-                        {recommendationsList.map((rec, index) => (
-                            <div key={index} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                {rec.subject_name}
-                              </span>
-                              <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-                                {rec.lecturer_names.length > 0 ? rec.lecturer_names.join(", ") : "Tövsiyə yoxdur"}
-                              </span>
-                            </div>
-                        ))}
-
-                        {recommendationsList.length === 0 && (
-                            <div className="p-8 text-center text-xs text-zinc-400">
-                              Bu ixtisasa uyğun məlumat tapılmadı.
-                            </div>
-                        )}
-                      </div>
+                      {recommendationsList.map((rec, index) => (
+                          <div key={index} className="p-4 space-y-2">
+                            <h4 className="text-sm font-semibold">{rec.subject_name}</h4>
+                            {rec.lecturer_names.length > 0 ? (
+                                <ol className="list-decimal list-inside space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                                  {rec.lecturer_names.map((name, i) => (
+                                      <li key={i}>{name}</li>
+                                  ))}
+                                </ol>
+                            ) : (
+                                <p className="text-xs text-zinc-400">Tövsiyə yoxdur</p>
+                            )}
+                          </div>
+                      ))}
+                      {recommendationsList.length === 0 && (
+                          <div className="p-6 text-center text-xs text-zinc-400">Məlumat tapılmadı.</div>
+                      )}
                     </div>
                 )}
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <button
-                        onClick={() => setShowHistory(!showHistory)}
-                        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                    >
-                      <History className="w-4 h-4" />
-                      <span>Cədvəllər ({sessions.length})</span>
-                      {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
+                <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                  <button
+                      onClick={() => setShowHistory(!showHistory)}
+                      className="flex items-center gap-2 text-xs font-medium text-zinc-500 uppercase tracking-wider hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span>Cədvəllər ({sessions.length})</span>
+                    {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
 
                   {showHistory && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {sessions.map((session) => (
                             <div
                                 key={session.id}
-                                className="group relative rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
+                                className="group relative border border-zinc-200 dark:border-zinc-800 rounded p-4 flex flex-col justify-between gap-4 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
                             >
-                              {/* Silmə düyməsi */}
                               <button
                                   onClick={(e) => handleDeleteSession(session.id, e)}
-                                  className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                                  title="Cədvəli sil"
+                                  className="absolute top-3 right-3 text-zinc-400 hover:text-red-500 transition-colors text-xs p-1"
+                                  title="Sil"
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-3.5 h-3.5" />
                               </button>
 
-                              <div className="space-y-2 pr-8">
-                                <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
-                                  {new Date(session.created_at).toLocaleDateString()}
-                                </span>
-                                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                                  {session.session_title}
-                                </h3>
+                              <div className="space-y-1 pr-6">
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {new Date(session.created_at).toLocaleDateString()}
+                        </span>
+                                <h3 className="text-sm font-medium">{session.session_title}</h3>
                               </div>
 
-                              <div className="flex items-center gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                              <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                                 <button
                                     onClick={() => handleOpenSession(session, "viewer")}
-                                    className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                                    className="flex-1 h-8 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium"
                                 >
-                                  <Eye className="w-3.5 h-3.5" /> Baxış
+                                  Bax
                                 </button>
                                 <button
                                     onClick={() => handleOpenSession(session, "editor")}
-                                    className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                                    className="h-8 px-3 rounded border border-zinc-300 dark:border-zinc-700 text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-900"
                                 >
-                                  <Edit3 className="w-3.5 h-3.5" /> Redaktə
+                                  Redaktə
                                 </button>
                               </div>
                             </div>
                         ))}
 
                         {sessions.length === 0 && (
-                            <div className="col-span-full text-center py-12 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
-                              <BookOpen className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-3" />
-                              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Heç bir cədvəl tapılmadı.</p>
+                            <div className="col-span-full border border-dashed border-zinc-200 dark:border-zinc-800 rounded p-8 text-center text-xs text-zinc-400">
+                              Cədvəl mövcud deyil.
                             </div>
                         )}
                       </div>
@@ -493,25 +469,25 @@ export default function Home() {
 
           {step === "viewer" && (
               <div className="space-y-6">
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex items-center justify-between">
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded p-4 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Cədvəl Baxışı</span>
-                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{sessionTitleInput}</h2>
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider">Cədvəl</span>
+                    <h2 className="text-base font-semibold">{sessionTitleInput}</h2>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => handleOpenSession({ id: activeSessionId!, session_title: sessionTitleInput, specialty_id: selectedMajorId!, created_at: "" }, "editor")}
-                        className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
+                        className="h-8 px-3 rounded border border-zinc-300 dark:border-zinc-700 text-xs font-medium"
                     >
-                      <Edit3 className="w-3.5 h-3.5" /> Dəyişiklik et
+                      Dəyiş
                     </button>
                     <button
                         type="button"
                         onClick={() => setStep("cards")}
-                        className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
+                        className="h-8 px-3 rounded border border-zinc-300 dark:border-zinc-700 text-xs font-medium"
                     >
-                      <ArrowLeft className="w-3.5 h-3.5" /> Geri
+                      Geri
                     </button>
                   </div>
                 </div>
@@ -522,36 +498,23 @@ export default function Home() {
                     if (dayCourses.length === 0) return null;
 
                     return (
-                        <div key={dayObj.value} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-                          <div className="bg-zinc-100 dark:bg-zinc-800/60 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
-                            <CalendarDays className="w-4 h-4 text-zinc-500" />
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                              {dayObj.label}
-                            </h3>
-                            <span className="text-[10px] font-mono bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full text-zinc-600 dark:text-zinc-300 ml-auto">
-                              {dayCourses.length} dərs
-                            </span>
+                        <div key={dayObj.value} className="border border-zinc-200 dark:border-zinc-800 rounded overflow-hidden">
+                          <div className="bg-zinc-50 dark:bg-zinc-900/50 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                            <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{dayObj.label}</span>
+                            <span className="text-[10px] text-zinc-400 font-mono">{dayCourses.length} dərs</span>
                           </div>
 
-                          <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                             {dayCourses.map((course) => (
-                                <div key={course.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors">
-                                  <div className="space-y-1">
-                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                      {course.name}
-                                    </span>
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                                      Müəllim: <strong className="text-zinc-700 dark:text-zinc-300 font-medium">{course.lecturer || "Təyin olunmayıb"}</strong>
-                                    </p>
+                                <div key={course.id} className="p-4 flex items-center justify-between gap-4">
+                                  <div className="space-y-0.5">
+                                    <span className="text-sm font-medium">{course.name}</span>
+                                    <p className="text-xs text-zinc-400">Müəllim: {course.lecturer || "Təyin olunmayıb"}</p>
                                   </div>
-
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-900 dark:text-zinc-100">
-                                      {course.time}
-                                    </span>
-                                    <span className="text-xs bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-600 dark:text-zinc-300">
-                                      {course.floor}-ci mərtəbə{course.room ? `, Otaq ${course.room}` : ""}
-                                    </span>
+                                  <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
+                                    <span>{course.time}</span>
+                                    <span>•</span>
+                                    <span>{course.floor}-ci mərtəbə{course.room ? `, ${course.room}` : ""}</span>
                                   </div>
                                 </div>
                             ))}
@@ -565,46 +528,36 @@ export default function Home() {
 
           {step === "editor" && (
               <form onSubmit={handleSaveSession} className="space-y-6">
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="w-full sm:w-auto flex-1 space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Cədvəl Başlığı</label>
-                    <input
-                        type="text"
-                        value={sessionTitleInput}
-                        onChange={(e) => setSessionTitleInput(e.target.value)}
-                        className="w-full max-w-md text-lg font-bold bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-zinc-100 text-zinc-900 dark:text-zinc-50 outline-none pb-1 transition-colors"
-                    />
-                  </div>
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded p-4 flex items-center justify-between gap-4">
+                  <input
+                      type="text"
+                      value={sessionTitleInput}
+                      onChange={(e) => setSessionTitleInput(e.target.value)}
+                      className="text-base font-semibold bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-zinc-100 outline-none pb-0.5 flex-1 max-w-sm"
+                  />
                   <button
                       type="button"
                       onClick={() => setStep("cards")}
-                      className="h-9 px-4 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium transition-all flex items-center gap-1.5"
+                      className="h-8 px-3 rounded border border-zinc-300 dark:border-zinc-700 text-xs font-medium"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Geri qayıt
+                    Geri
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {activeCourses.map((course, index) => (
-                      <div
-                          key={course.id}
-                          className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col lg:flex-row items-start lg:items-center gap-4"
-                      >
-                        <div className="flex items-center gap-3 w-full lg:w-64">
-                          <span className="text-xs font-mono font-bold text-zinc-400 w-5">{index + 1}.</span>
-                          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate" title={course.name}>
-                            {course.name}
-                          </span>
-                        </div>
+                      <div key={course.id} className="border border-zinc-200 dark:border-zinc-800 rounded p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <span className="text-xs font-mono text-zinc-400 w-5">{index + 1}.</span>
+                        <span className="text-sm font-medium w-full sm:w-48 truncate">{course.name}</span>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-2 w-full lg:w-auto flex-1">
+                        <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto flex-1">
                           <select
                               value={course.day || 1}
                               onChange={(e) => handleCourseChange(index, "day", Number(e.target.value))}
-                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                              className="h-8 px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent text-xs"
                           >
                             {DAY_OPTIONS.map((d) => (
-                                <option key={d.value} value={d.value}>{d.label}</option>
+                                <option key={d.value} value={d.value} className="bg-white dark:bg-zinc-900">{d.label}</option>
                             ))}
                           </select>
 
@@ -612,16 +565,16 @@ export default function Home() {
                               type="time"
                               value={course.time}
                               onChange={(e) => handleCourseChange(index, "time", e.target.value)}
-                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                              className="h-8 px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent text-xs"
                           />
 
                           <select
                               value={course.floor ?? 1}
                               onChange={(e) => handleCourseChange(index, "floor", Number(e.target.value))}
-                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                              className="h-8 px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent text-xs"
                           >
                             {FLOOR_OPTIONS.map((f) => (
-                                <option key={f.value} value={f.value}>{f.label}</option>
+                                <option key={f.value} value={f.value} className="bg-white dark:bg-zinc-900">{f.label}</option>
                             ))}
                           </select>
 
@@ -630,19 +583,17 @@ export default function Home() {
                               placeholder="Otaq"
                               value={course.room}
                               onChange={(e) => handleCourseChange(index, "room", e.target.value)}
-                              className="w-full lg:w-20 h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                              className="h-8 px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent text-xs w-full sm:w-16"
                           />
                         </div>
 
-                        <div className="w-full lg:w-56">
-                          <input
-                              type="text"
-                              placeholder="Lektor"
-                              value={course.lecturer}
-                              onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
-                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
-                          />
-                        </div>
+                        <input
+                            type="text"
+                            placeholder="Lektor"
+                            value={course.lecturer}
+                            onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
+                            className="h-8 px-2 rounded border border-zinc-300 dark:border-zinc-700 bg-transparent text-xs w-full sm:w-40"
+                        />
                       </div>
                   ))}
                 </div>
@@ -650,9 +601,9 @@ export default function Home() {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                    className="w-full h-10 rounded bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 text-xs font-medium hover:opacity-90 transition-opacity"
                 >
-                  <Save className="w-4 h-4" /> Cədvəli Yadda Saxla
+                  Yadda Saxla
                 </button>
               </form>
           )}
