@@ -3,19 +3,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  User,
   Plus,
   ArrowLeft,
-  ChevronRight,
   LayoutDashboard,
   Save,
   BookOpen,
   Sparkles,
   Edit3,
-  Eye
+  Eye,
+  CalendarDays
 } from "lucide-react";
 
 type Course = {
@@ -76,7 +72,6 @@ export default function Home() {
   const [majorOptions, setMajorOptions] = useState<{ id: number; name: string }[]>([]);
   const [selectedMajorId, setSelectedMajorId] = useState<number | null>(null);
 
-  // 'cards' | 'viewer' | 'editor'
   const [step, setStep] = useState<"cards" | "viewer" | "editor">("cards");
   const [sessions, setSessions] = useState<SessionCard[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -195,7 +190,6 @@ export default function Home() {
       });
     }
 
-    // Günə görə sıralayaq
     coursesList.sort((a, b) => (a.day || 1) - (b.day || 1) || a.time.localeCompare(b.time));
 
     setActiveCourses(coursesList);
@@ -283,12 +277,6 @@ export default function Home() {
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">Şəxsi dərslər və mühazirə cədvəli</p>
               </div>
             </div>
-            {deviceId && (
-                <div className="hidden sm:flex items-center gap-2 text-xs font-mono bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-md text-zinc-500">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  ID: {deviceId.slice(0, 12)}...
-                </div>
-            )}
           </div>
         </header>
 
@@ -301,13 +289,13 @@ export default function Home() {
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
                   <div className="flex flex-col md:flex-row items-end gap-4">
                     <div className="flex-1 w-full space-y-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" /> Yeni Cədvəl Kartı Yarat
                       </label>
                       <select
                           value={selectedMajorId || ""}
                           onChange={(e) => setSelectedMajorId(Number(e.target.value))}
-                          className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
+                          className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-sm focus:outline-none"
                       >
                         <option value="">— İxtisas seçin —</option>
                         {majorOptions.map((m) => (
@@ -339,18 +327,15 @@ export default function Home() {
                             className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
                         >
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
-                          {new Date(session.created_at).toLocaleDateString()}
-                        </span>
-                            </div>
+                      <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
+                        {new Date(session.created_at).toLocaleDateString()}
+                      </span>
                             <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                               {session.session_title}
                             </h3>
                           </div>
 
-                          {/* Sürətli keçidlər: Bax və ya Redaktə et */}
-                          <div className="flex items-center gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
+                          <div className="flex items-center gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
                             <button
                                 onClick={() => handleOpenSession(session, "viewer")}
                                 className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
@@ -372,73 +357,90 @@ export default function Home() {
                       <div className="text-center py-16 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
                         <BookOpen className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-3" />
                         <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Aktiv cədvəl kartı tapılmadı.</p>
-                        <p className="text-xs text-zinc-400 mt-1">Yuxarıdakı menyudan ixtisas seçərək başlaya bilərsiniz.</p>
                       </div>
                   )}
                 </div>
               </div>
           )}
 
-          {/* BAXIŞ (VIEWER) EKRANI - Yalnız oxumaq üçün, səliqəli və yığcam */}
+          {/* ULTRA-TƏMİZ VƏ SƏLİQƏLİ BAXIŞ (VIEWER) EKRANI */}
           {step === "viewer" && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Cədvəl Baxışı</span>
-                    <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{sessionTitleInput}</h2>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Dərs Cədvəli Baxışı</span>
+                    <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{sessionTitleInput}</h2>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => handleOpenSession({ id: activeSessionId!, session_title: sessionTitleInput, specialty_id: selectedMajorId!, created_at: "" }, "editor")}
-                        className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
+                        className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
                     >
                       <Edit3 className="w-3.5 h-3.5" /> Dəyişiklik et
                     </button>
                     <button
                         type="button"
                         onClick={() => setStep("cards")}
-                        className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
+                        className="h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" /> Geri
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {activeCourses.map((course, index) => {
-                    const dayLabel = DAY_OPTIONS.find((d) => d.value === course.day)?.label || "Bazar ertəsi";
+                {/* Günlərə görə ultra səliqəli qruplaşdırma */}
+                <div className="space-y-4">
+                  {DAY_OPTIONS.map((dayObj) => {
+                    const dayCourses = activeCourses.filter((c) => c.day === dayObj.value);
+                    if (dayCourses.length === 0) return null; // Boş günləri göstərib ekranı qarışdırmayaq
+
                     return (
-                        <div
-                            key={course.id}
-                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col justify-between gap-3"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                        {course.name}
-                      </span>
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                        {dayLabel}
+                        <div key={dayObj.value} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+                          {/* Gün Başlığı */}
+                          <div className="bg-zinc-100 dark:bg-zinc-800/60 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+                            <CalendarDays className="w-4 h-4 text-zinc-500" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                              {dayObj.label}
+                            </h3>
+                            <span className="text-[10px] font-mono bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full text-zinc-600 dark:text-zinc-300 ml-auto">
+                        {dayCourses.length} dərs
                       </span>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                              <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">{course.time}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-zinc-400" />
-                              <span className="truncate">{course.floor}-ci mərtəbə{course.room ? `, ${course.room}` : ""}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 truncate">
-                              <User className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
-                              <span className="truncate" title={course.lecturer}>{course.lecturer || "Təyin olunmayıb"}</span>
-                            </div>
+                          {/* Həmin günün dərsləri */}
+                          <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                            {dayCourses.map((course) => (
+                                <div key={course.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors">
+                                  <div className="space-y-1">
+                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                              {course.name}
+                            </span>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                                      Müəllim: <strong className="text-zinc-700 dark:text-zinc-300 font-medium">{course.lecturer || "Təyin olunmayıb"}</strong>
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                            <span className="text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-900 dark:text-zinc-100">
+                              {course.time}
+                            </span>
+                                    <span className="text-xs bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-600 dark:text-zinc-300">
+                              {course.floor}-ci mərtəbə{course.room ? `, Otaq ${course.room}` : ""}
+                            </span>
+                                  </div>
+                                </div>
+                            ))}
                           </div>
                         </div>
                     );
                   })}
+
+                  {activeCourses.length === 0 && (
+                      <div className="text-center py-12 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                        <p className="text-xs text-zinc-400">Heç bir dərs qeyd olunmayıb.</p>
+                      </div>
+                  )}
                 </div>
               </div>
           )}
@@ -520,7 +522,7 @@ export default function Home() {
                               type="text"
                               placeholder="Lektor"
                               value={course.lecturer}
-                              onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
+                              onChange={(e) => handleCourseChange(index, "lecturer", e.name ? e.target.value : e.target.value)}
                               className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
                           />
                         </div>
