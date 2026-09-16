@@ -8,10 +8,12 @@ import {
   LayoutDashboard,
   Save,
   BookOpen,
-  Sparkles,
   Edit3,
   Eye,
-  CalendarDays
+  CalendarDays,
+  History,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 type Course = {
@@ -81,6 +83,9 @@ export default function Home() {
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Tarixçə blokunun gizli/açıq olması üçün state (default olaraq hidden / false)
+  const [showHistory, setShowHistory] = useState(false);
+
   useEffect(() => {
     async function init() {
       const devId = getDeviceFingerprint();
@@ -115,7 +120,7 @@ export default function Home() {
     }
     setActiveSessionId(null);
     setIsUpdateMode(false);
-    setSessionTitleInput("Yeni Cədvəl Kartı");
+    setSessionTitleInput("Yeni Cədvəl");
     loadSubjectsForMajor(selectedMajorId, null, "editor");
   }
 
@@ -265,17 +270,14 @@ export default function Home() {
   return (
       <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased">
 
-        {/* Header */}
+        {/* Minimalist Header (Navbardan artıq elementlər təmizləndi) */}
         <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900">
                 <LayoutDashboard className="w-5 h-5" />
               </div>
-              <div>
-                <h1 className="text-sm font-semibold tracking-tight">Akademik Cədvəl İdarəetməsi</h1>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">Şəxsi dərslər və mühazirə cədvəli</p>
-              </div>
+              <h1 className="text-sm font-semibold tracking-tight">Akademik Cədvəl</h1>
             </div>
           </div>
         </header>
@@ -289,8 +291,8 @@ export default function Home() {
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
                   <div className="flex flex-col md:flex-row items-end gap-4">
                     <div className="flex-1 w-full space-y-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" /> Yeni Cədvəl Kartı Yarat
+                      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                        Yeni Cədvəl Yarat
                       </label>
                       <select
                           value={selectedMajorId || ""}
@@ -314,61 +316,70 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Tarixçə Bölməsi (İstifadəçi istədikdə açıb bağlaya bilər, default olaraq gizlidir) */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Yadda Saxlanılan Cədvəllər</h2>
-                    <span className="text-xs text-zinc-400 font-mono">{sessions.length} kart mövcuddur</span>
+                    <button
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                    >
+                      <History className="w-4 h-4" />
+                      <span>Cədvəllər ({sessions.length})</span>
+                      {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {sessions.map((session) => (
-                        <div
-                            key={session.id}
-                            className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
-                        >
-                          <div className="space-y-2">
-                      <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
-                        {new Date(session.created_at).toLocaleDateString()}
-                      </span>
-                            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                              {session.session_title}
-                            </h3>
-                          </div>
-
-                          <div className="flex items-center gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                            <button
-                                onClick={() => handleOpenSession(session, "viewer")}
-                                className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                  {showHistory && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        {sessions.map((session) => (
+                            <div
+                                key={session.id}
+                                className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
                             >
-                              <Eye className="w-3.5 h-3.5" /> Baxış
-                            </button>
-                            <button
-                                onClick={() => handleOpenSession(session, "editor")}
-                                className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" /> Redaktə
-                            </button>
-                          </div>
-                        </div>
-                    ))}
-                  </div>
+                              <div className="space-y-2">
+                          <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
+                            {new Date(session.created_at).toLocaleDateString()}
+                          </span>
+                                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                                  {session.session_title}
+                                </h3>
+                              </div>
 
-                  {sessions.length === 0 && (
-                      <div className="text-center py-16 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
-                        <BookOpen className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-3" />
-                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Aktiv cədvəl kartı tapılmadı.</p>
+                              <div className="flex items-center gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                                <button
+                                    onClick={() => handleOpenSession(session, "viewer")}
+                                    className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> Baxış
+                                </button>
+                                <button
+                                    onClick={() => handleOpenSession(session, "editor")}
+                                    className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" /> Redaktə
+                                </button>
+                              </div>
+                            </div>
+                        ))}
+
+                        {sessions.length === 0 && (
+                            <div className="col-span-full text-center py-12 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
+                              <BookOpen className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-3" />
+                              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Heç bir cədvəl tapılmadı.</p>
+                            </div>
+                        )}
                       </div>
                   )}
                 </div>
               </div>
           )}
 
-          {/* ULTRA-TƏMİZ VƏ SƏLİqƏLİ BAXIŞ (VIEWER) EKRANI */}
+          {/* BAXIŞ (VIEWER) EKRANI */}
           {step === "viewer" && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Dərs Cədvəli Baxışı</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Cədvəl Baxışı</span>
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">{sessionTitleInput}</h2>
                   </div>
                   <div className="flex items-center gap-2">
@@ -389,7 +400,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Günlərə görə ultra səliqəli qruplaşdırma */}
                 <div className="space-y-4">
                   {DAY_OPTIONS.map((dayObj) => {
                     const dayCourses = activeCourses.filter((c) => c.day === dayObj.value);
@@ -448,7 +458,7 @@ export default function Home() {
               <form onSubmit={handleSaveSession} className="space-y-6">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="w-full sm:w-auto flex-1 space-y-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Kartın Başlığı</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Cədvəl Başlığı</label>
                     <input
                         type="text"
                         value={sessionTitleInput}
@@ -533,7 +543,7 @@ export default function Home() {
                     disabled={loading}
                     className="w-full h-11 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" /> Cədvəl Kartını Yadda Saxla
+                  <Save className="w-4 h-4" /> Cədvəli Yadda Saxla
                 </button>
               </form>
           )}
