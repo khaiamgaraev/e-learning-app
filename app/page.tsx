@@ -332,7 +332,7 @@ export default function Home() {
   return (
       <div className="min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-100 font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800">
 
-        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black hidder">
+        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black hidden">
           <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
             <span className="text-sm font-medium tracking-tight">Akademik Cədvəl</span>
           </div>
