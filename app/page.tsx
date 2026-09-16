@@ -363,7 +363,7 @@ export default function Home() {
               </div>
           )}
 
-          {/* ULTRA-TƏMİZ VƏ SƏLİQƏLİ BAXIŞ (VIEWER) EKRANI */}
+          {/* ULTRA-TƏMİZ VƏ SƏLİqƏLİ BAXIŞ (VIEWER) EKRANI */}
           {step === "viewer" && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex items-center justify-between">
@@ -393,11 +393,10 @@ export default function Home() {
                 <div className="space-y-4">
                   {DAY_OPTIONS.map((dayObj) => {
                     const dayCourses = activeCourses.filter((c) => c.day === dayObj.value);
-                    if (dayCourses.length === 0) return null; // Boş günləri göstərib ekranı qarışdırmayaq
+                    if (dayCourses.length === 0) return null;
 
                     return (
                         <div key={dayObj.value} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-                          {/* Gün Başlığı */}
                           <div className="bg-zinc-100 dark:bg-zinc-800/60 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
                             <CalendarDays className="w-4 h-4 text-zinc-500" />
                             <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
@@ -408,7 +407,6 @@ export default function Home() {
                       </span>
                           </div>
 
-                          {/* Həmin günün dərsləri */}
                           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
                             {dayCourses.map((course) => (
                                 <div key={course.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors">
@@ -522,7 +520,7 @@ export default function Home() {
                               type="text"
                               placeholder="Lektor"
                               value={course.lecturer}
-                              onChange={(e) => handleCourseChange(index, "lecturer", e.name ? e.target.value : e.target.value)}
+                              onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
                               className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
                           />
                         </div>
