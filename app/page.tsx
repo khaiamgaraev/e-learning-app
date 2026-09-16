@@ -5,17 +5,19 @@ import { supabase } from "@/lib/supabase";
 import {
   Plus,
   ArrowLeft,
-  LayoutDashboard,
   Save,
-  BookOpen,
-  Edit3,
   Eye,
   CalendarDays,
   History,
   ChevronDown,
   ChevronUp,
   Sparkles,
-  X
+  X,
+  Clock,
+  MapPin,
+  UserCheck,
+  BookOpen,
+  Layers
 } from "lucide-react";
 
 type Course = {
@@ -142,7 +144,7 @@ export default function Home() {
     }
     setActiveSessionId(null);
     setIsUpdateMode(false);
-    setSessionTitleInput("Yeni cədvəl");
+    setSessionTitleInput("Yeni Cədvəl");
     loadSubjectsForMajor(selectedMajorId, null, "editor");
   }
 
@@ -283,7 +285,7 @@ export default function Home() {
           .insert({
             device_id: deviceId,
             specialty_id: selectedMajorId,
-            session_title: sessionTitleInput.trim() || "Cədvəl",
+            session_title: sessionTitleInput.trim() || "Yeni Cədvəl",
           })
           .select()
           .single();
@@ -330,26 +332,42 @@ export default function Home() {
   }
 
   return (
-      <div className="min-h-screen bg-content1 text-foreground font-sans antialiased selection:bg-default-200">
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-zinc-800 relative overflow-x-hidden">
 
-        {/* Header - HeroUI Navigation Style */}
-        <header className="sticky top-0 z-40 w-full border-b border-divider bg-background/70 backdrop-blur-md">
+        {/* Magic UI Background Glow Gradients */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-tr from-indigo-500/20 via-purple-500/20 to-pink-500/10 blur-[120px] pointer-events-none rounded-full" />
+
+        {/* Header - Shadcn / Vercel Navigation Style */}
+        <header className="sticky top-0 z-50 w-full border-b border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl">
           <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold tracking-normal capitalize">Akademik cədvəl</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Layers className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-medium tracking-tight text-zinc-200">Akademik Cədvəl İdarəetməsi</span>
             </div>
+            <div className="text-xs text-zinc-400 font-mono">v2.0</div>
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto px-6 py-10">
+        <main className="max-w-4xl mx-auto px-6 py-12 relative z-10">
 
           {step === "cards" && (
-              <div className="space-y-6">
-                {/* Main Card - HeroUI Card Style */}
-                <div className="rounded-2xl border border-divider bg-content1 p-6 shadow-sm space-y-6">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-default-500 uppercase tracking-wider">
-                      İxtisas seçimi
+              <div className="space-y-8">
+
+                {/* Hero Card Section */}
+                <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8 shadow-2xl backdrop-blur-md relative overflow-hidden space-y-6">
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+
+                  <div className="space-y-2 relative z-10">
+                    <span className="text-xs font-semibold tracking-wider text-indigo-400 uppercase">İxtisas Paneli</span>
+                    <h1 className="text-2xl font-semibold tracking-tight text-white">İxtisasınızı seçin və cədvəlinizi qurun</h1>
+                    <p className="text-sm text-zinc-400">Universitet dərslərinizi və lektorlarınızı rahatlıqla tənzimləyin.</p>
+                  </div>
+
+                  <div className="space-y-3 relative z-10">
+                    <label className="block text-xs font-medium text-zinc-300">
+                      İxtisas Siyahısı
                     </label>
                     <select
                         value={selectedMajorId || ""}
@@ -357,70 +375,76 @@ export default function Home() {
                           setSelectedMajorId(Number(e.target.value));
                           setShowRecommendations(false);
                         }}
-                        className="w-full h-11 px-3 rounded-xl border border-default-200 bg-default-50 hover:border-default-400 focus:border-foreground focus:outline-none transition-colors text-sm"
+                        className="w-full h-12 px-4 rounded-xl border border-zinc-800 bg-zinc-950/80 text-zinc-200 hover:border-zinc-700 focus:border-indigo-500 focus:outline-none transition-all text-sm shadow-inner"
                     >
-                      <option value="">— İxtisas seçin —</option>
+                      <option value="" className="bg-zinc-900 text-zinc-500">— İxtisas seçin —</option>
                       {majorOptions.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
+                          <option key={m.id} value={m.id} className="bg-zinc-900 text-zinc-200">{m.name}</option>
                       ))}
                     </select>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 relative z-10">
                     <button
                         type="button"
                         onClick={handleStartNewSchedule}
                         disabled={loading}
-                        className="w-full sm:flex-1 h-11 rounded-xl bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-sm"
+                        className="w-full sm:flex-1 h-12 rounded-xl bg-white text-zinc-950 text-sm font-medium hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 shadow-lg shadow-white/5 active:scale-[0.98]"
                     >
-                      <Plus className="w-4 h-4" /> Cədvəl qur
+                      <Plus className="w-4 h-4" /> Yeni Cədvəl Qur
                     </button>
 
                     <button
                         type="button"
                         onClick={handleFetchRecommendations}
                         disabled={loading}
-                        className="w-full sm:flex-1 h-11 rounded-xl border border-default-200 hover:bg-default-100 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="w-full sm:flex-1 h-12 rounded-xl border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800/80 text-zinc-200 text-sm font-medium transition-all flex items-center justify-center gap-2 hover:border-zinc-700 active:scale-[0.98]"
                     >
-                      <Sparkles className="w-4 h-4 text-warning" /> Lektor tövsiyəsi al
+                      <Sparkles className="w-4 h-4 text-amber-400" /> Lektor Tövsiyəsi Al
                     </button>
                   </div>
                 </div>
 
-                {/* Recommendations Section */}
+                {/* Recommendations Panel */}
                 {showRecommendations && (
-                    <div className="rounded-2xl border border-divider bg-content1 overflow-hidden shadow-sm">
-                      <div className="bg-default-100 px-6 py-4 border-b border-divider flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-default-600">
-                    Tövsiyə olunan lektorlar
-                  </span>
+                    <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 overflow-hidden shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-300">
+                      <div className="bg-zinc-800/40 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                      Tövsiyə Olunan Lektorlar
+                    </span>
+                        </div>
                         <button
                             onClick={() => setShowRecommendations(false)}
-                            className="text-xs text-default-500 hover:text-foreground transition-colors"
+                            className="text-xs text-zinc-400 hover:text-white transition-colors"
                         >
                           Bağla
                         </button>
                       </div>
 
-                      <div className="divide-y divide-divider">
+                      <div className="divide-y divide-zinc-800/60 max-h-96 overflow-y-auto">
                         {recommendationsList.map((rec, index) => (
-                            <div key={index} className="p-5 space-y-2">
-                              <h4 className="text-sm font-semibold">{rec.subject_name}</h4>
+                            <div key={index} className="p-6 space-y-2 hover:bg-zinc-800/20 transition-colors">
+                              <h4 className="text-sm font-semibold text-zinc-200">{rec.subject_name}</h4>
                               {rec.lecturer_names.length > 0 ? (
-                                  <ol className="list-decimal list-inside space-y-1 text-xs text-default-600">
+                                  <ul className="space-y-1 text-xs text-zinc-400">
                                     {rec.lecturer_names.map((name, i) => (
-                                        <li key={i}>{name}</li>
+                                        <li key={i} className="flex items-center gap-2">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                          {name}
+                                        </li>
                                     ))}
-                                  </ol>
+                                  </ul>
                               ) : (
-                                  <p className="text-xs text-default-400">Tövsiyə yoxdur</p>
+                                  <p className="text-xs text-zinc-600">Tövsiyə mövcud deyil</p>
                               )}
                             </div>
                         ))}
 
                         {recommendationsList.length === 0 && (
-                            <div className="p-8 text-center text-xs text-default-400">
-                              Məlumat tapılmadı.
+                            <div className="p-12 text-center text-xs text-zinc-500">
+                              Heç bir məlumat tapılmadı.
                             </div>
                         )}
                       </div>
@@ -428,48 +452,48 @@ export default function Home() {
                 )}
 
                 {/* History Section */}
-                <div className="space-y-4 pt-4">
+                <div className="space-y-4 pt-2">
                   <button
                       onClick={() => setShowHistory(!showHistory)}
-                      className="flex items-center gap-2 text-xs font-semibold text-default-500 uppercase tracking-wider hover:text-foreground transition-colors"
+                      className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider hover:text-white transition-colors"
                   >
                     <History className="w-4 h-4" />
-                    <span>Cədvəllər ({sessions.length})</span>
+                    <span>Yadda Saxlanılan Cədvəllər ({sessions.length})</span>
                     {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
 
                   {showHistory && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-300">
                         {sessions.map((session) => (
                             <div
                                 key={session.id}
-                                className="group relative rounded-2xl border border-divider bg-content1 p-5 shadow-sm hover:border-default-400 transition-all flex flex-col justify-between gap-4"
+                                className="group relative rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-xl hover:border-zinc-700 transition-all flex flex-col justify-between gap-6 backdrop-blur-md"
                             >
                               <button
                                   onClick={(e) => handleDeleteSession(session.id, e)}
-                                  className="absolute top-4 right-4 p-1.5 rounded-lg text-default-400 hover:text-danger hover:bg-default-100 transition-colors"
+                                  className="absolute top-5 right-5 p-2 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-zinc-800/80 transition-colors"
                                   title="Sil"
                               >
                                 <X className="w-4 h-4" />
                               </button>
 
-                              <div className="space-y-1.5 pr-8">
-                        <span className="text-[10px] font-mono bg-default-100 text-default-600 px-2 py-0.5 rounded-md">
+                              <div className="space-y-2 pr-8">
+                        <span className="text-[10px] font-mono bg-zinc-800 text-zinc-400 px-2.5 py-1 rounded-md border border-zinc-700/50">
                           {new Date(session.created_at).toLocaleDateString()}
                         </span>
-                                <h3 className="text-sm font-semibold">{session.session_title}</h3>
+                                <h3 className="text-base font-semibold text-white tracking-tight">{session.session_title}</h3>
                               </div>
 
-                              <div className="flex items-center gap-2 pt-3 border-t border-divider">
+                              <div className="flex items-center gap-2 pt-4 border-t border-zinc-800/80">
                                 <button
                                     onClick={() => handleOpenSession(session, "viewer")}
-                                    className="flex-1 h-9 rounded-xl bg-foreground text-background text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                                    className="flex-1 h-10 rounded-xl bg-zinc-100 text-zinc-950 text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-white transition-all shadow-sm"
                                 >
                                   <Eye className="w-3.5 h-3.5" /> Baxış
                                 </button>
                                 <button
                                     onClick={() => handleOpenSession(session, "editor")}
-                                    className="h-9 px-4 rounded-xl border border-default-200 hover:bg-default-100 text-xs font-medium transition-colors"
+                                    className="h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300 transition-all"
                                 >
                                   Redaktə
                                 </button>
@@ -478,35 +502,36 @@ export default function Home() {
                         ))}
 
                         {sessions.length === 0 && (
-                            <div className="col-span-full rounded-2xl border border-dashed border-divider p-12 text-center text-xs text-default-400">
-                              Heç bir cədvəl mövcud deyil.
+                            <div className="col-span-full rounded-3xl border border-dashed border-zinc-800 p-12 text-center text-xs text-zinc-500">
+                              Heç bir yadda saxlanılmış cədvəl mövcud deyil.
                             </div>
                         )}
                       </div>
                   )}
                 </div>
+
               </div>
           )}
 
           {step === "viewer" && (
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-divider bg-content1 p-6 shadow-sm flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-semibold text-default-400 uppercase tracking-wider">Cədvəl baxışı</span>
-                    <h2 className="text-lg font-semibold">{sessionTitleInput}</h2>
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">Cədvəl Baxışı</span>
+                    <h2 className="text-xl font-semibold text-white tracking-tight">{sessionTitleInput}</h2>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5 w-full sm:w-auto">
                     <button
                         type="button"
                         onClick={() => handleOpenSession({ id: activeSessionId!, session_title: sessionTitleInput, specialty_id: selectedMajorId!, created_at: "" }, "editor")}
-                        className="h-9 px-4 rounded-xl border border-default-200 hover:bg-default-100 text-xs font-medium transition-colors"
+                        className="flex-1 sm:flex-initial h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition-all"
                     >
-                      Dəyişiklik et
+                      Dəyişiklik Et
                     </button>
                     <button
                         type="button"
                         onClick={() => setStep("cards")}
-                        className="h-9 px-4 rounded-xl border border-default-200 hover:bg-default-100 text-xs font-medium transition-colors flex items-center gap-1.5"
+                        className="flex-1 sm:flex-initial h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition-all flex items-center justify-center gap-1.5"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" /> Geri
                     </button>
@@ -519,33 +544,36 @@ export default function Home() {
                     if (dayCourses.length === 0) return null;
 
                     return (
-                        <div key={dayObj.value} className="rounded-2xl border border-divider bg-content1 overflow-hidden shadow-sm">
-                          <div className="bg-default-100 px-6 py-3.5 border-b border-divider flex items-center justify-between">
-                      <span className="text-xs font-semibold text-default-600 uppercase tracking-wider flex items-center gap-2">
-                        <CalendarDays className="w-3.5 h-3.5 text-default-500" />
+                        <div key={dayObj.value} className="rounded-3xl border border-zinc-800 bg-zinc-900/60 overflow-hidden shadow-xl backdrop-blur-md">
+                          <div className="bg-zinc-800/40 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                      <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+                        <CalendarDays className="w-4 h-4 text-indigo-400" />
                         {dayObj.label}
                       </span>
-                            <span className="text-[10px] font-mono bg-default-200 px-2 py-0.5 rounded-full text-default-700">
+                            <span className="text-[10px] font-mono bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-full border border-zinc-700/50">
                         {dayCourses.length} dərs
                       </span>
                           </div>
 
-                          <div className="divide-y divide-divider">
+                          <div className="divide-y divide-zinc-800/60">
                             {dayCourses.map((course) => (
-                                <div key={course.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-default-50 transition-colors">
-                                  <div className="space-y-1">
-                                    <span className="text-sm font-semibold">{course.name}</span>
-                                    <p className="text-xs text-default-500">
-                                      Müəllim: <strong className="text-default-700 font-medium">{course.lecturer || "Təyin olunmayıb"}</strong>
+                                <div key={course.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-800/20 transition-colors">
+                                  <div className="space-y-1.5">
+                                    <span className="text-sm font-semibold text-white">{course.name}</span>
+                                    <p className="text-xs text-zinc-400 flex items-center gap-1.5">
+                                      <UserCheck className="w-3.5 h-3.5 text-zinc-500" />
+                                      Müəllim: <strong className="text-zinc-200 font-medium">{course.lecturer || "Təyin olunmayıb"}</strong>
                                     </p>
                                   </div>
 
                                   <div className="flex items-center gap-3">
-                            <span className="text-xs font-mono font-bold bg-default-100 px-2.5 py-1 rounded-lg">
+                            <span className="text-xs font-mono font-medium bg-zinc-800/80 text-zinc-200 px-3 py-1.5 rounded-xl border border-zinc-700/50 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-indigo-400" />
                               {course.time}
                             </span>
-                                    <span className="text-xs bg-default-100 text-default-600 px-2.5 py-1 rounded-lg">
-                              {course.floor}-ci mərtəbə{course.room ? `, otaq ${course.room}` : ""}
+                                    <span className="text-xs bg-zinc-800/80 text-zinc-300 px-3 py-1.5 rounded-xl border border-zinc-700/50 flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-purple-400" />
+                                      {course.floor}-ci mərtəbə{course.room ? `, otaq ${course.room}` : ""}
                             </span>
                                   </div>
                                 </div>
@@ -559,38 +587,39 @@ export default function Home() {
           )}
 
           {step === "editor" && (
-              <form onSubmit={handleSaveSession} className="space-y-6">
-                <div className="rounded-2xl border border-divider bg-content1 p-6 shadow-sm flex items-center justify-between gap-4">
+              <form onSubmit={handleSaveSession} className="space-y-6 animate-in fade-in duration-300">
+                <div className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <input
                       type="text"
                       value={sessionTitleInput}
                       onChange={(e) => setSessionTitleInput(e.target.value)}
-                      className="text-lg font-semibold bg-transparent border-b border-default-300 focus:border-foreground outline-none pb-1 flex-1 max-w-sm transition-colors"
+                      className="text-lg font-semibold bg-transparent border-b border-zinc-700 text-white focus:border-indigo-500 outline-none pb-1.5 flex-1 max-w-sm transition-colors"
+                      placeholder="Cədvəlin adı..."
                   />
                   <button
                       type="button"
                       onClick={() => setStep("cards")}
-                      className="h-9 px-4 rounded-xl border border-default-200 hover:bg-default-100 text-xs font-medium transition-colors flex items-center gap-1.5"
+                      className="h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition-all flex items-center gap-1.5"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Geri qayıt
+                    <ArrowLeft className="w-3.5 h-3.5" /> Geri Qayıt
                   </button>
                 </div>
 
                 <div className="space-y-3">
                   {activeCourses.map((course, index) => (
-                      <div key={course.id} className="rounded-2xl border border-divider bg-content1 p-4 shadow-sm flex flex-col lg:flex-row items-start lg:items-center gap-4">
-                        <div className="flex items-center gap-3 w-full lg:w-56">
-                          <span className="text-xs font-mono font-bold text-default-400 w-5">{index + 1}.</span>
-                          <span className="text-sm font-semibold truncate" title={course.name}>
+                      <div key={course.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 shadow-xl flex flex-col lg:flex-row items-start lg:items-center gap-4 backdrop-blur-md">
+                        <div className="flex items-center gap-3 w-full lg:w-60">
+                          <span className="text-xs font-mono font-bold text-zinc-500 w-5">{index + 1}.</span>
+                          <span className="text-sm font-semibold text-zinc-200 truncate" title={course.name}>
                       {course.name}
                     </span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-2 w-full lg:w-auto flex-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-2.5 w-full lg:w-auto flex-1">
                           <select
                               value={course.day || 1}
                               onChange={(e) => handleCourseChange(index, "day", Number(e.target.value))}
-                              className="w-full h-9 px-2.5 rounded-xl border border-default-200 bg-default-50 text-xs font-medium focus:outline-none focus:border-foreground"
+                              className="w-full h-10 px-3 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-200 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
                           >
                             {DAY_OPTIONS.map((d) => (
                                 <option key={d.value} value={d.value}>{d.label}</option>
@@ -601,13 +630,13 @@ export default function Home() {
                               type="time"
                               value={course.time}
                               onChange={(e) => handleCourseChange(index, "time", e.target.value)}
-                              className="w-full h-9 px-2.5 rounded-xl border border-default-200 bg-default-50 text-xs font-medium focus:outline-none focus:border-foreground"
+                              className="w-full h-10 px-3 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-200 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
                           />
 
                           <select
                               value={course.floor ?? 1}
                               onChange={(e) => handleCourseChange(index, "floor", Number(e.target.value))}
-                              className="w-full h-9 px-2.5 rounded-xl border border-default-200 bg-default-50 text-xs font-medium focus:outline-none focus:border-foreground"
+                              className="w-full h-10 px-3 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-200 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
                           >
                             {FLOOR_OPTIONS.map((f) => (
                                 <option key={f.value} value={f.value}>{f.label}</option>
@@ -619,17 +648,17 @@ export default function Home() {
                               placeholder="Otaq"
                               value={course.room}
                               onChange={(e) => handleCourseChange(index, "room", e.target.value)}
-                              className="w-full lg:w-20 h-9 px-2.5 rounded-xl border border-default-200 bg-default-50 text-xs font-medium focus:outline-none focus:border-foreground"
+                              className="w-full lg:w-20 h-10 px-3 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-200 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
                           />
                         </div>
 
                         <div className="w-full lg:w-48">
                           <input
                               type="text"
-                              placeholder="Lektor"
+                              placeholder="Müəllim / Lektor"
                               value={course.lecturer}
                               onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
-                              className="w-full h-9 px-2.5 rounded-xl border border-default-200 bg-default-50 text-xs font-medium focus:outline-none focus:border-foreground"
+                              className="w-full h-10 px-3 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-200 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-colors"
                           />
                         </div>
                       </div>
@@ -639,9 +668,9 @@ export default function Home() {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 rounded-xl bg-foreground text-background font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm hover:opacity-90 disabled:opacity-50"
+                    className="w-full h-12 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 hover:opacity-95 active:scale-[0.99] disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" /> Cədvəli yadda saxla
+                  <Save className="w-4 h-4" /> Cədvəli Yadda Saxla
                 </button>
               </form>
           )}
