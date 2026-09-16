@@ -13,7 +13,8 @@ import {
   CalendarDays,
   History,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sparkles
 } from "lucide-react";
 
 type Course = {
@@ -32,6 +33,11 @@ type SessionCard = {
   session_title: string;
   specialty_id: number;
   created_at: string;
+};
+
+type LecturerRecommendation = {
+  subject_name: string;
+  lecturer_names: string[];
 };
 
 const DAY_OPTIONS = [
@@ -83,8 +89,10 @@ export default function Home() {
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Tarixçə blokunun gizli/açıq olması üçün state (default olaraq hidden / false)
+  // Tarixçə və Lektor tövsiyələri üçün state-lər
   const [showHistory, setShowHistory] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendationsList, setRecommendationsList] = useState<LecturerRecommendation[]>([]);
 
   useEffect(() => {
     async function init() {
@@ -122,6 +130,48 @@ export default function Home() {
     setIsUpdateMode(false);
     setSessionTitleInput("Yeni Cədvəl");
     loadSubjectsForMajor(selectedMajorId, null, "editor");
+  }
+
+  async function handleFetchRecommendations() {
+    if (!selectedMajorId) {
+      alert("Zəhmət olmasa əvvəlcə ixtisas seçin!");
+      return;
+    }
+
+    setLoading(true);
+    // 1. Seçilmiş ixtisasa aid fənləri çəkək
+    const { data: subjectsData } = await supabase
+        .from("subjects")
+        .select("id, subject_name")
+        .eq("specialty_id", selectedMajorId);
+
+    if (!subjectsData || subjectsData.length === 0) {
+      alert("Bu ixtisasa uyğun fənlər tapılmadı!");
+      setRecommendationsList([]);
+      setShowRecommendations(true);
+      setLoading(false);
+      return;
+    }
+
+    const recs: LecturerRecommendation[] = [];
+
+    // 2. Hər fənn üçün tövsiyə olunan lektorları çəkək
+    for (const sub of subjectsData) {
+      const { data: lectData } = await supabase
+          .from("recommended_lecturers")
+          .select("lecturer_name")
+          .eq("subject_id", sub.id);
+
+      const names = lectData ? lectData.map((l) => l.lecturer_name) : [];
+      recs.push({
+        subject_name: sub.subject_name,
+        lecturer_names: names,
+      });
+    }
+
+    setRecommendationsList(recs);
+    setShowRecommendations(true);
+    setLoading(false);
   }
 
   async function handleOpenSession(session: SessionCard, targetStep: "viewer" | "editor") {
@@ -270,7 +320,7 @@ export default function Home() {
   return (
       <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased">
 
-        {/* Minimalist Header (Navbardan artıq elementlər təmizləndi) */}
+        {/* Minimalist Header */}
         <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -288,35 +338,84 @@ export default function Home() {
           {/* KARTLAR EKRANI */}
           {step === "cards" && (
               <div className="space-y-8">
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
-                  <div className="flex flex-col md:flex-row items-end gap-4">
-                    <div className="flex-1 w-full space-y-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                        Yeni Cədvəl Yarat
-                      </label>
-                      <select
-                          value={selectedMajorId || ""}
-                          onChange={(e) => setSelectedMajorId(Number(e.target.value))}
-                          className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-sm focus:outline-none"
-                      >
-                        <option value="">— İxtisas seçin —</option>
-                        {majorOptions.map((m) => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                      İxtisas Seçimi
+                    </label>
+                    <select
+                        value={selectedMajorId || ""}
+                        onChange={(e) => {
+                          setSelectedMajorId(Number(e.target.value));
+                          setShowRecommendations(false); // ixtisas dəyişəndə tövsiyələri bağla
+                        }}
+                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-sm focus:outline-none"
+                    >
+                      <option value="">— İxtisas seçin —</option>
+                      {majorOptions.map((m) => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                     <button
                         type="button"
                         onClick={handleStartNewSchedule}
                         disabled={loading}
-                        className="w-full md:w-auto h-10 px-5 rounded-md bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                        className="w-full sm:flex-1 h-10 px-5 rounded-md bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
                     >
                       <Plus className="w-4 h-4" /> Cədvəl Qur
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleFetchRecommendations}
+                        disabled={loading}
+                        className="w-full sm:flex-1 h-10 px-5 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm font-medium transition-all flex items-center justify-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" /> Lektor tövsiyəsi alın
                     </button>
                   </div>
                 </div>
 
-                {/* Tarixçə Bölməsi (İstifadəçi istədikdə açıb bağlaya bilər, default olaraq gizlidir) */}
+                {/* Lektor Tövsiyələri Bloku (İstəyə bağlı açılır) */}
+                {showRecommendations && (
+                    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm animate-in fade-in duration-200">
+                      <div className="bg-zinc-100 dark:bg-zinc-800/60 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                          Seçilmiş İxtisasın Fənləri və Tövsiyə Edilən Lektorlar
+                        </h3>
+                        <button
+                            onClick={() => setShowRecommendations(false)}
+                            className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        >
+                          Bağla
+                        </button>
+                      </div>
+
+                      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                        {recommendationsList.map((rec, index) => (
+                            <div key={index} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                                {rec.subject_name}
+                              </span>
+                              <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
+                                {rec.lecturer_names.length > 0 ? rec.lecturer_names.join(", ") : "Tövsiyə yoxdur"}
+                              </span>
+                            </div>
+                        ))}
+
+                        {recommendationsList.length === 0 && (
+                            <div className="p-8 text-center text-xs text-zinc-400">
+                              Bu ixtisasa uyğun məlumat tapılmadı.
+                            </div>
+                        )}
+                      </div>
+                    </div>
+                )}
+
+                {/* Tarixçə Bölməsi */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <button
