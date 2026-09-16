@@ -2,6 +2,19 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Plus,
+  ArrowLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Save,
+  BookOpen,
+  Sparkles
+} from "lucide-react";
 
 type Course = {
   id: number;
@@ -22,13 +35,13 @@ type SessionCard = {
 };
 
 const DAY_OPTIONS = [
-  { value: 1, label: "1-ci gün" },
-  { value: 2, label: "2-ci gün" },
-  { value: 3, label: "3-cü gün" },
-  { value: 4, label: "4-cü gün" },
-  { value: 5, label: "5-ci gün" },
-  { value: 6, label: "6-cı gün" },
-  { value: 7, label: "Bazar günü" },
+  { value: 1, label: "Bazar ertəsi" },
+  { value: 2, label: "Çərşənbə axşamı" },
+  { value: 3, label: "Çərşənbə" },
+  { value: 4, label: "Cümə axşamı" },
+  { value: 5, label: "Cümə" },
+  { value: 6, label: "Şənbə" },
+  { value: 7, label: "Bazar" },
 ];
 
 const FLOOR_OPTIONS = Array.from({ length: 13 }, (_, i) => ({
@@ -36,7 +49,6 @@ const FLOOR_OPTIONS = Array.from({ length: 13 }, (_, i) => ({
   label: `${i}-ci mərtəbə`,
 }));
 
-// Sadə və effektiv Cihaz Fingerprint yaradıcısı
 function getDeviceFingerprint(): string {
   let deviceId = localStorage.getItem("app_device_id");
   if (!deviceId) {
@@ -45,7 +57,6 @@ function getDeviceFingerprint(): string {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const rawString = `${userAgent}-${screenRes}-${timezone}-${Math.random()}`;
 
-    // Sadə hash (baza stringini unikal ID-yə çevirmək üçün)
     let hash = 0;
     for (let i = 0; i < rawString.length; i++) {
       const char = rawString.charCodeAt(i);
@@ -63,17 +74,15 @@ export default function Home() {
   const [majorOptions, setMajorOptions] = useState<{ id: number; name: string }[]>([]);
   const [selectedMajorId, setSelectedMajorId] = useState<number | null>(null);
 
-  // 'cards' | 'editor'
   const [step, setStep] = useState<"cards" | "editor">("cards");
-
   const [sessions, setSessions] = useState<SessionCard[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionTitleInput, setSessionTitleInput] = useState("Payız Semestri Cədvəli");
 
   const [activeCourses, setActiveCourses] = useState<Course[]>([]);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Səhifə açıldıqda cihazı tanıyırıq və məlumatları çəkirik
   useEffect(() => {
     async function init() {
       const devId = getDeviceFingerprint();
@@ -82,7 +91,6 @@ export default function Home() {
       const { data: majorData } = await supabase.from("specialties").select("id, name");
       if (majorData) setMajorOptions(majorData);
 
-      // Bu cihaza aid sessiyaları yüklə
       fetchSessions(devId);
     }
     init();
@@ -102,7 +110,6 @@ export default function Home() {
     }
   }
 
-  // Yeni cədvəl yaratmaq
   function handleStartNewSchedule() {
     if (!selectedMajorId) {
       alert("Zəhmət olmasa ixtisas seçin!");
@@ -114,7 +121,6 @@ export default function Home() {
     loadSubjectsForMajor(selectedMajorId, null);
   }
 
-  // Mövcud karta kliklədikdə
   async function handleOpenSession(session: SessionCard) {
     setActiveSessionId(session.id);
     setSelectedMajorId(session.specialty_id);
@@ -123,8 +129,8 @@ export default function Home() {
     await loadSubjectsForMajor(session.specialty_id, session.id);
   }
 
-  // Fənləri və qeydləri yüklə
   async function loadSubjectsForMajor(majorId: number, sessionId: string | null) {
+    setLoading(true);
     const { data: subjectsData, error: subError } = await supabase
         .from("subjects")
         .select("id, subject_name")
@@ -132,6 +138,7 @@ export default function Home() {
 
     if (subError || !subjectsData) {
       alert("Fənlər tapılmadı!");
+      setLoading(false);
       return;
     }
 
@@ -187,6 +194,7 @@ export default function Home() {
 
     setActiveCourses(coursesList);
     setStep("editor");
+    setLoading(false);
   }
 
   function handleCourseChange(index: number, field: keyof Course, value: any) {
@@ -195,15 +203,14 @@ export default function Home() {
     setActiveCourses(updated);
   }
 
-  // Cədvəli Yadda Saxla / Yenilə
   async function handleSaveSession(e: FormEvent) {
     e.preventDefault();
     if (!selectedMajorId) return;
 
+    setLoading(true);
     let targetSessionId = activeSessionId;
 
     if (!isUpdateMode || !targetSessionId) {
-      // Yeni sessiya aç
       const { data: newSession, error: sessError } = await supabase
           .from("student_sessions")
           .insert({
@@ -216,11 +223,11 @@ export default function Home() {
 
       if (sessError || !newSession) {
         alert("Səhv baş verdi: " + sessError?.message);
+        setLoading(false);
         return;
       }
       targetSessionId = newSession.id;
     } else {
-      // Mövcud sessiyanın başlığını yenilə və köhnə fənləri təmizlə
       await supabase
           .from("student_sessions")
           .update({ session_title: sessionTitleInput.trim() })
@@ -229,9 +236,8 @@ export default function Home() {
       await supabase.from("student_schedules").delete().eq("session_id", targetSessionId);
     }
 
-    // Fənləri yaz
     const schedulesToInsert = activeCourses.map((course) => {
-      const dayLabel = DAY_OPTIONS.find((d) => d.value === course.day)?.label || "1-ci gün";
+      const dayLabel = DAY_OPTIONS.find((d) => d.value === course.day)?.label || "Bazar ertəsi";
       return {
         session_id: targetSessionId,
         subject_id: course.id,
@@ -246,165 +252,220 @@ export default function Home() {
 
     if (insertError) {
       alert("Xəta: " + insertError.message);
+      setLoading(false);
       return;
     }
 
+    setLoading(false);
     alert("Cədvəl uğurla yadda saxlanıldı!");
     setStep("cards");
     fetchSessions(deviceId);
   }
 
   return (
-      <div className="flex flex-col flex-1 items-center bg-zinc-50 font-sans dark:bg-black min-h-screen">
-        <main className="flex w-full max-w-4xl flex-col py-16 px-6">
+      <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-900">
+
+        {/* Header */}
+        <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md">
+          <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900">
+                <LayoutDashboard className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-sm font-semibold tracking-tight">Akademik Cədvəl İdarəetməsi</h1>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Şəxsi dərslər və mühazirə cədvəli</p>
+              </div>
+            </div>
+            {deviceId && (
+                <div className="hidden sm:flex items-center gap-2 text-xs font-mono bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 rounded-md text-zinc-500">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  ID: {deviceId.slice(0, 12)}...
+                </div>
+            )}
+          </div>
+        </header>
+
+        {/* Main Container */}
+        <main className="max-w-5xl mx-auto px-6 py-10">
 
           {/* KARTLAR EKRANI */}
           {step === "cards" && (
-              <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4 hidden">
-                  <div>
-                    <h2 className="text-xl font-bold text-black dark:text-zinc-50 hidden">Mənim Cədvəl Kartlarım</h2>
-                    <p className="text-xs text-zinc-500 mt-1 hidden">Bu cihazda qeydə alınmış cədvəlləriniz avtomatik idarə olunur.</p>
-                  </div>
-                  <span className="text-[10px] bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-1 rounded font-mono hidden">
-                ID: {deviceId.slice(0, 10)}...
-              </span>
-                </div>
+              <div className="space-y-8">
 
-                {/* Yeni Cədvəl Kartı Yaratmaq */}
-                <div className="bg-white dark:bg-zinc-950 p-5 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row gap-4 items-end">
-                  <div className="flex-1 w-full">
-                    <label className="block text-xs text-zinc-500 mb-1">Yeni Cədvəl üçün İxtisas Seçin</label>
-                    <select
-                        value={selectedMajorId || ""}
-                        onChange={(e) => setSelectedMajorId(Number(e.target.value))}
-                        className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-black dark:text-white outline-none"
-                    >
-                      <option value="">— İxtisas seçin —</option>
-                      {majorOptions.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                      type="button"
-                      onClick={handleStartNewSchedule}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded text-sm font-medium whitespace-nowrap"
-                  >
-                   Cədvəl Qur
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <span>Keçmiş</span>
-                  </div>
-                  <br/>
-                  {sessions.map((session) => (
-                      <div
-                          key={session.id}
-                          onClick={() => handleOpenSession(session)}
-                          className="cursor-pointer bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-lg shadow-sm hover:border-blue-500 dark:hover:border-blue-500 transition-all flex flex-col justify-between gap-4"
+                {/* Yeni Cədvəl Qrupu Bölməsi */}
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
+                  <div className="flex flex-col md:flex-row items-end gap-4">
+                    <div className="flex-1 w-full space-y-2">
+                      <label className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" /> Yeni Cədvəl Kartı Yarat
+                      </label>
+                      <select
+                          value={selectedMajorId || ""}
+                          onChange={(e) => setSelectedMajorId(Number(e.target.value))}
+                          className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
                       >
-                        <div>
-                    <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded font-mono">
-                      {new Date(session.created_at).toLocaleDateString()}
-                    </span>
-                          <h3 className="text-base font-semibold text-black dark:text-zinc-50 mt-2">
-                            {session.session_title}
-                          </h3>
-                        </div>
-                        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
-                    Cədvələ bax / Redaktə et &rarr;
-                  </span>
-                      </div>
-                  ))}
+                        <option value="">— İxtisas seçin —</option>
+                        {majorOptions.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleStartNewSchedule}
+                        disabled={loading}
+                        className="w-full md:w-auto h-10 px-5 rounded-md bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-sm font-medium transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                    >
+                      <Plus className="w-4 h-4" /> Cədvəl Qur
+                    </button>
+                  </div>
                 </div>
 
-                {sessions.length === 0 && (
-                    <div className="text-center py-12 text-zinc-400 text-sm border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
-                      Bu cihazda hələ heç bir cədvəl kartı yoxdur. Yuxarıdan ixtisas seçib ilk kartınızı yaradın.
-                    </div>
-                )}
+                {/* Mövcud Kartlar Siyahısı */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Yadda Saxlanılan Cədvəllər</h2>
+                    <span className="text-xs text-zinc-400 font-mono">{sessions.length} kart mövcuddur</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {sessions.map((session) => (
+                        <div
+                            key={session.id}
+                            onClick={() => handleOpenSession(session)}
+                            className="group cursor-pointer rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
+                          {new Date(session.created_at).toLocaleDateString()}
+                        </span>
+                            </div>
+                            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {session.session_title}
+                            </h3>
+                          </div>
+                          <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800/80 text-xs font-medium text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                            <span>Cədvəli tənzimlə</span>
+                            <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                    ))}
+                  </div>
+
+                  {sessions.length === 0 && (
+                      <div className="text-center py-16 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
+                        <BookOpen className="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-3" />
+                        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Aktiv cədvəl kartı tapılmadı.</p>
+                        <p className="text-xs text-zinc-400 mt-1">Yuxarıdakı menyudan ixtisas seçərək başlaya bilərsiniz.</p>
+                      </div>
+                  )}
+                </div>
+
               </div>
           )}
 
-          {/* REDAKTOR / CƏDVƏL EKRANI */}
+          {/* REDAKTOR EKRANI */}
           {step === "editor" && (
-              <form onSubmit={handleSaveSession} className="flex flex-col gap-6 bg-white dark:bg-zinc-950 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
-                  <div>
-                    <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">Kartın Başlığı</label>
+              <form onSubmit={handleSaveSession} className="space-y-6">
+
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="w-full sm:w-auto flex-1 space-y-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Kartın Başlığı</label>
                     <input
                         type="text"
                         value={sessionTitleInput}
                         onChange={(e) => setSessionTitleInput(e.target.value)}
-                        className="text-lg font-bold bg-transparent border-b border-dashed border-zinc-400 text-black dark:text-white outline-none pb-1"
+                        className="w-full max-w-md text-lg font-bold bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-zinc-100 text-zinc-900 dark:text-zinc-50 outline-none pb-1 transition-colors"
                     />
                   </div>
                   <button
                       type="button"
                       onClick={() => setStep("cards")}
-                      className="text-xs border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                      className="h-9 px-4 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium transition-all flex items-center gap-1.5"
                   >
-                    &larr; Kartlara Qayıt
+                    <ArrowLeft className="w-3.5 h-3.5" /> Geri qayıt
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="space-y-3">
                   {activeCourses.map((course, index) => (
-                      <div key={course.id} className="flex flex-wrap items-center gap-3 p-3 rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                        <span className="text-xs font-bold text-zinc-400 w-5">{index + 1}.</span>
-                        <div className="w-full sm:w-36 font-medium text-sm text-black dark:text-zinc-50">{course.name}</div>
+                      <div
+                          key={course.id}
+                          className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col lg:flex-row items-start lg:items-center gap-4 transition-all hover:border-zinc-300 dark:hover:border-zinc-700"
+                      >
+                        <div className="flex items-center gap-3 w-full lg:w-64">
+                          <span className="text-xs font-mono font-bold text-zinc-400 w-5">{index + 1}.</span>
+                          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate" title={course.name}>
+                      {course.name}
+                    </span>
+                        </div>
 
-                        <select
-                            value={course.day || 1}
-                            onChange={(e) => handleCourseChange(index, "day", Number(e.target.value))}
-                            className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black px-2 py-1.5 text-xs text-black dark:text-zinc-50"
-                        >
-                          {DAY_OPTIONS.map((d) => (
-                              <option key={d.value} value={d.value}>{d.label}</option>
-                          ))}
-                        </select>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-2 w-full lg:w-auto flex-1">
+                          <div className="relative">
+                            <select
+                                value={course.day || 1}
+                                onChange={(e) => handleCourseChange(index, "day", Number(e.target.value))}
+                                className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                            >
+                              {DAY_OPTIONS.map((d) => (
+                                  <option key={d.value} value={d.value}>{d.label}</option>
+                              ))}
+                            </select>
+                          </div>
 
-                        <input
-                            type="time"
-                            value={course.time}
-                            onChange={(e) => handleCourseChange(index, "time", e.target.value)}
-                            className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black px-2 py-1.5 text-xs text-black dark:text-zinc-50"
-                        />
+                          <div className="relative">
+                            <input
+                                type="time"
+                                value={course.time}
+                                onChange={(e) => handleCourseChange(index, "time", e.target.value)}
+                                className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                            />
+                          </div>
 
-                        <select
-                            value={course.floor ?? 1}
-                            onChange={(e) => handleCourseChange(index, "floor", Number(e.target.value))}
-                            className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black px-2 py-1.5 text-xs text-black dark:text-zinc-50"
-                        >
-                          {FLOOR_OPTIONS.map((f) => (
-                              <option key={f.value} value={f.value}>{f.label}</option>
-                          ))}
-                        </select>
+                          <div className="relative">
+                            <select
+                                value={course.floor ?? 1}
+                                onChange={(e) => handleCourseChange(index, "floor", Number(e.target.value))}
+                                className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                            >
+                              {FLOOR_OPTIONS.map((f) => (
+                                  <option key={f.value} value={f.value}>{f.label}</option>
+                              ))}
+                            </select>
+                          </div>
 
-                        <input
-                            type="text"
-                            placeholder="Otaq"
-                            value={course.room}
-                            onChange={(e) => handleCourseChange(index, "room", e.target.value)}
-                            className="w-16 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black px-2 py-1.5 text-xs text-black dark:text-zinc-50"
-                        />
+                          <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Otaq"
+                                value={course.room}
+                                onChange={(e) => handleCourseChange(index, "room", e.target.value)}
+                                className="w-full lg:w-20 h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                            />
+                          </div>
+                        </div>
 
-                        <input
-                            type="text"
-                            placeholder="Lektor"
-                            value={course.lecturer}
-                            onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
-                            className="flex-1 min-w-[100px] rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-black px-2 py-1.5 text-xs text-black dark:text-zinc-50"
-                        />
+                        <div className="w-full lg:w-56">
+                          <input
+                              type="text"
+                              placeholder="Lektor"
+                              value={course.lecturer}
+                              onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
+                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                          />
+                        </div>
                       </div>
                   ))}
                 </div>
 
-                <button type="submit" className="w-full bg-black text-white dark:bg-zinc-50 dark:text-black py-2.5 rounded text-sm font-medium mt-2">
-                  Cədvəl Kartını Yadda Saxla
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" /> Cədvəl Kartını Yadda Saxla
                 </button>
               </form>
           )}
