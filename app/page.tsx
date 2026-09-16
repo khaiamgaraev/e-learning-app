@@ -14,7 +14,8 @@ import {
   History,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  X
 } from "lucide-react";
 
 type Course = {
@@ -89,7 +90,6 @@ export default function Home() {
   const [isUpdateMode, setIsUpdateMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Tarixçə və Lektor tövsiyələri üçün state-lər
   const [showHistory, setShowHistory] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [recommendationsList, setRecommendationsList] = useState<LecturerRecommendation[]>([]);
@@ -121,6 +121,22 @@ export default function Home() {
     }
   }
 
+  async function handleDeleteSession(sessionId: string, e: React.MouseEvent) {
+    e.stopPropagation(); // Kartın digər klik hadisələrinin işə düşməsinin qarşısını alırıq
+    if (!confirm("Bu cədvəli silmək istədiyinizə əminsiniz?")) return;
+
+    // Əvvəlcə əlaqəli dərsləri silirik
+    await supabase.from("student_schedules").delete().eq("session_id", sessionId);
+    // Sonra sessiyanın özünü silirik
+    const { error } = await supabase.from("student_sessions").delete().eq("id", sessionId);
+
+    if (!error) {
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    } else {
+      alert("Silinərkən xəta baş verdi.");
+    }
+  }
+
   function handleStartNewSchedule() {
     if (!selectedMajorId) {
       alert("Zəhmət olmasa ixtisas seçin!");
@@ -139,7 +155,6 @@ export default function Home() {
     }
 
     setLoading(true);
-    // 1. Seçilmiş ixtisasa aid fənləri çəkək
     const { data: subjectsData } = await supabase
         .from("subjects")
         .select("id, subject_name")
@@ -155,7 +170,6 @@ export default function Home() {
 
     const recs: LecturerRecommendation[] = [];
 
-    // 2. Hər fənn üçün tövsiyə olunan lektorları çəkək
     for (const sub of subjectsData) {
       const { data: lectData } = await supabase
           .from("recommended_lecturers")
@@ -320,7 +334,6 @@ export default function Home() {
   return (
       <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased">
 
-        {/* Minimalist Header */}
         <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md">
           <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -332,10 +345,8 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Main Container */}
         <main className="max-w-5xl mx-auto px-6 py-10">
 
-          {/* KARTLAR EKRANI */}
           {step === "cards" && (
               <div className="space-y-8">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-4">
@@ -347,7 +358,7 @@ export default function Home() {
                         value={selectedMajorId || ""}
                         onChange={(e) => {
                           setSelectedMajorId(Number(e.target.value));
-                          setShowRecommendations(false); // ixtisas dəyişəndə tövsiyələri bağla
+                          setShowRecommendations(false);
                         }}
                         className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-sm focus:outline-none"
                     >
@@ -379,7 +390,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Lektor Tövsiyələri Bloku (İstəyə bağlı açılır) */}
                 {showRecommendations && (
                     <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm animate-in fade-in duration-200">
                       <div className="bg-zinc-100 dark:bg-zinc-800/60 px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
@@ -415,7 +425,6 @@ export default function Home() {
                     </div>
                 )}
 
-                {/* Tarixçə Bölməsi */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <button
@@ -433,12 +442,21 @@ export default function Home() {
                         {sessions.map((session) => (
                             <div
                                 key={session.id}
-                                className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
+                                className="group relative rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
                             >
-                              <div className="space-y-2">
-                          <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
-                            {new Date(session.created_at).toLocaleDateString()}
-                          </span>
+                              {/* Silmə düyməsi */}
+                              <button
+                                  onClick={(e) => handleDeleteSession(session.id, e)}
+                                  className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                  title="Cədvəli sil"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+
+                              <div className="space-y-2 pr-8">
+                                <span className="text-[11px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
+                                  {new Date(session.created_at).toLocaleDateString()}
+                                </span>
                                 <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                                   {session.session_title}
                                 </h3>
@@ -473,7 +491,6 @@ export default function Home() {
               </div>
           )}
 
-          {/* BAXIŞ (VIEWER) EKRANI */}
           {step === "viewer" && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex items-center justify-between">
@@ -512,29 +529,29 @@ export default function Home() {
                               {dayObj.label}
                             </h3>
                             <span className="text-[10px] font-mono bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full text-zinc-600 dark:text-zinc-300 ml-auto">
-                        {dayCourses.length} dərs
-                      </span>
+                              {dayCourses.length} dərs
+                            </span>
                           </div>
 
                           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
                             {dayCourses.map((course) => (
                                 <div key={course.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors">
                                   <div className="space-y-1">
-                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                              {course.name}
-                            </span>
+                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                                      {course.name}
+                                    </span>
                                     <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                                       Müəllim: <strong className="text-zinc-700 dark:text-zinc-300 font-medium">{course.lecturer || "Təyin olunmayıb"}</strong>
                                     </p>
                                   </div>
 
                                   <div className="flex items-center gap-3">
-                            <span className="text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-900 dark:text-zinc-100">
-                              {course.time}
-                            </span>
+                                    <span className="text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-900 dark:text-zinc-100">
+                                      {course.time}
+                                    </span>
                                     <span className="text-xs bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-zinc-600 dark:text-zinc-300">
-                              {course.floor}-ci mərtəbə{course.room ? `, Otaq ${course.room}` : ""}
-                            </span>
+                                      {course.floor}-ci mərtəbə{course.room ? `, Otaq ${course.room}` : ""}
+                                    </span>
                                   </div>
                                 </div>
                             ))}
@@ -542,17 +559,10 @@ export default function Home() {
                         </div>
                     );
                   })}
-
-                  {activeCourses.length === 0 && (
-                      <div className="text-center py-12 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                        <p className="text-xs text-zinc-400">Heç bir dərs qeyd olunmayıb.</p>
-                      </div>
-                  )}
                 </div>
               </div>
           )}
 
-          {/* REDAKTOR EKRANI */}
           {step === "editor" && (
               <form onSubmit={handleSaveSession} className="space-y-6">
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -583,8 +593,8 @@ export default function Home() {
                         <div className="flex items-center gap-3 w-full lg:w-64">
                           <span className="text-xs font-mono font-bold text-zinc-400 w-5">{index + 1}.</span>
                           <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate" title={course.name}>
-                      {course.name}
-                    </span>
+                            {course.name}
+                          </span>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-2 w-full lg:w-auto flex-1">
