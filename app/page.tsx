@@ -13,7 +13,9 @@ import {
   LayoutDashboard,
   Save,
   BookOpen,
-  Sparkles
+  Sparkles,
+  Edit3,
+  Eye
 } from "lucide-react";
 
 type Course = {
@@ -74,7 +76,8 @@ export default function Home() {
   const [majorOptions, setMajorOptions] = useState<{ id: number; name: string }[]>([]);
   const [selectedMajorId, setSelectedMajorId] = useState<number | null>(null);
 
-  const [step, setStep] = useState<"cards" | "editor">("cards");
+  // 'cards' | 'viewer' | 'editor'
+  const [step, setStep] = useState<"cards" | "viewer" | "editor">("cards");
   const [sessions, setSessions] = useState<SessionCard[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionTitleInput, setSessionTitleInput] = useState("Payız Semestri Cədvəli");
@@ -118,18 +121,18 @@ export default function Home() {
     setActiveSessionId(null);
     setIsUpdateMode(false);
     setSessionTitleInput("Yeni Cədvəl Kartı");
-    loadSubjectsForMajor(selectedMajorId, null);
+    loadSubjectsForMajor(selectedMajorId, null, "editor");
   }
 
-  async function handleOpenSession(session: SessionCard) {
+  async function handleOpenSession(session: SessionCard, targetStep: "viewer" | "editor") {
     setActiveSessionId(session.id);
     setSelectedMajorId(session.specialty_id);
     setSessionTitleInput(session.session_title);
     setIsUpdateMode(true);
-    await loadSubjectsForMajor(session.specialty_id, session.id);
+    await loadSubjectsForMajor(session.specialty_id, session.id, targetStep);
   }
 
-  async function loadSubjectsForMajor(majorId: number, sessionId: string | null) {
+  async function loadSubjectsForMajor(majorId: number, sessionId: string | null, targetStep: "viewer" | "editor") {
     setLoading(true);
     const { data: subjectsData, error: subError } = await supabase
         .from("subjects")
@@ -192,8 +195,11 @@ export default function Home() {
       });
     }
 
+    // Günə görə sıralayaq
+    coursesList.sort((a, b) => (a.day || 1) - (b.day || 1) || a.time.localeCompare(b.time));
+
     setActiveCourses(coursesList);
-    setStep("editor");
+    setStep(targetStep);
     setLoading(false);
   }
 
@@ -263,7 +269,7 @@ export default function Home() {
   }
 
   return (
-      <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-900">
+      <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans antialiased">
 
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md">
@@ -292,8 +298,6 @@ export default function Home() {
           {/* KARTLAR EKRANI */}
           {step === "cards" && (
               <div className="space-y-8">
-
-                {/* Yeni Cədvəl Qrupu Bölməsi */}
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
                   <div className="flex flex-col md:flex-row items-end gap-4">
                     <div className="flex-1 w-full space-y-2">
@@ -322,7 +326,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Mövcud Kartlar Siyahısı */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Yadda Saxlanılan Cədvəllər</h2>
@@ -333,8 +336,7 @@ export default function Home() {
                     {sessions.map((session) => (
                         <div
                             key={session.id}
-                            onClick={() => handleOpenSession(session)}
-                            className="group cursor-pointer rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
+                            className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-sm hover:border-zinc-400 dark:hover:border-zinc-600 transition-all flex flex-col justify-between gap-4"
                         >
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
@@ -342,13 +344,25 @@ export default function Home() {
                           {new Date(session.created_at).toLocaleDateString()}
                         </span>
                             </div>
-                            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                               {session.session_title}
                             </h3>
                           </div>
-                          <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800/80 text-xs font-medium text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
-                            <span>Cədvəli tənzimlə</span>
-                            <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+
+                          {/* Sürətli keçidlər: Bax və ya Redaktə et */}
+                          <div className="flex items-center gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
+                            <button
+                                onClick={() => handleOpenSession(session, "viewer")}
+                                className="flex-1 h-9 px-3 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 text-xs font-medium flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Baxış
+                            </button>
+                            <button
+                                onClick={() => handleOpenSession(session, "editor")}
+                                className="h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" /> Redaktə
+                            </button>
                           </div>
                         </div>
                     ))}
@@ -362,14 +376,76 @@ export default function Home() {
                       </div>
                   )}
                 </div>
+              </div>
+          )}
 
+          {/* BAXIŞ (VIEWER) EKRANI - Yalnız oxumaq üçün, səliqəli və yığcam */}
+          {step === "viewer" && (
+              <div className="space-y-6">
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Cədvəl Baxışı</span>
+                    <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{sessionTitleInput}</h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => handleOpenSession({ id: activeSessionId!, session_title: sessionTitleInput, specialty_id: selectedMajorId!, created_at: "" }, "editor")}
+                        className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Dəyişiklik et
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setStep("cards")}
+                        className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-all"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" /> Geri
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {activeCourses.map((course, index) => {
+                    const dayLabel = DAY_OPTIONS.find((d) => d.value === course.day)?.label || "Bazar ertəsi";
+                    return (
+                        <div
+                            key={course.id}
+                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col justify-between gap-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        {course.name}
+                      </span>
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
+                        {dayLabel}
+                      </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                              <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100">{course.time}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+                              <span className="truncate">{course.floor}-ci mərtəbə{course.room ? `, ${course.room}` : ""}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 truncate">
+                              <User className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+                              <span className="truncate" title={course.lecturer}>{course.lecturer || "Təyin olunmayıb"}</span>
+                            </div>
+                          </div>
+                        </div>
+                    );
+                  })}
+                </div>
               </div>
           )}
 
           {/* REDAKTOR EKRANI */}
           {step === "editor" && (
               <form onSubmit={handleSaveSession} className="space-y-6">
-
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="w-full sm:w-auto flex-1 space-y-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Kartın Başlığı</label>
@@ -393,7 +469,7 @@ export default function Home() {
                   {activeCourses.map((course, index) => (
                       <div
                           key={course.id}
-                          className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col lg:flex-row items-start lg:items-center gap-4 transition-all hover:border-zinc-300 dark:hover:border-zinc-700"
+                          className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 shadow-sm flex flex-col lg:flex-row items-start lg:items-center gap-4"
                       >
                         <div className="flex items-center gap-3 w-full lg:w-64">
                           <span className="text-xs font-mono font-bold text-zinc-400 w-5">{index + 1}.</span>
@@ -403,48 +479,40 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-2 w-full lg:w-auto flex-1">
-                          <div className="relative">
-                            <select
-                                value={course.day || 1}
-                                onChange={(e) => handleCourseChange(index, "day", Number(e.target.value))}
-                                className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                            >
-                              {DAY_OPTIONS.map((d) => (
-                                  <option key={d.value} value={d.value}>{d.label}</option>
-                              ))}
-                            </select>
-                          </div>
+                          <select
+                              value={course.day || 1}
+                              onChange={(e) => handleCourseChange(index, "day", Number(e.target.value))}
+                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                          >
+                            {DAY_OPTIONS.map((d) => (
+                                <option key={d.value} value={d.value}>{d.label}</option>
+                            ))}
+                          </select>
 
-                          <div className="relative">
-                            <input
-                                type="time"
-                                value={course.time}
-                                onChange={(e) => handleCourseChange(index, "time", e.target.value)}
-                                className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                            />
-                          </div>
+                          <input
+                              type="time"
+                              value={course.time}
+                              onChange={(e) => handleCourseChange(index, "time", e.target.value)}
+                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                          />
 
-                          <div className="relative">
-                            <select
-                                value={course.floor ?? 1}
-                                onChange={(e) => handleCourseChange(index, "floor", Number(e.target.value))}
-                                className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                            >
-                              {FLOOR_OPTIONS.map((f) => (
-                                  <option key={f.value} value={f.value}>{f.label}</option>
-                              ))}
-                            </select>
-                          </div>
+                          <select
+                              value={course.floor ?? 1}
+                              onChange={(e) => handleCourseChange(index, "floor", Number(e.target.value))}
+                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                          >
+                            {FLOOR_OPTIONS.map((f) => (
+                                <option key={f.value} value={f.value}>{f.label}</option>
+                            ))}
+                          </select>
 
-                          <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Otaq"
-                                value={course.room}
-                                onChange={(e) => handleCourseChange(index, "room", e.target.value)}
-                                className="w-full lg:w-20 h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
-                            />
-                          </div>
+                          <input
+                              type="text"
+                              placeholder="Otaq"
+                              value={course.room}
+                              onChange={(e) => handleCourseChange(index, "room", e.target.value)}
+                              className="w-full lg:w-20 h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
+                          />
                         </div>
 
                         <div className="w-full lg:w-56">
@@ -453,7 +521,7 @@ export default function Home() {
                               placeholder="Lektor"
                               value={course.lecturer}
                               onChange={(e) => handleCourseChange(index, "lecturer", e.target.value)}
-                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-zinc-900"
+                              className="w-full h-9 px-2.5 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs font-medium"
                           />
                         </div>
                       </div>
